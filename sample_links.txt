@@ -1,0 +1,23 @@
+# Sample Google Drive links file with document types
+# Format: URL:document_type
+# Remove the # comments and replace with your actual links
+
+# Available document types:
+# - business_license
+# - evn_bill  
+# - land_certificate
+# - cic_report
+# - cic_report_2
+# - financial_statement
+# - id_check
+# - unknown (default)
+
+# Example format (replace with your actual Google Drive links):
+# https://drive.google.com/file/d/1ABC123xyz/view?usp=sharing:evn_bill
+# https://drive.google.com/file/d/1DEF456uvw/view?usp=sharing:land_certificate
+# https://drive.google.com/file/d/1GHI789rst/view?usp=sharing:cic_report
+
+# Your actual Google Drive links go here (one per line):
+# https://your-link-1:evn_bill
+# https://your-link-2:land_certificate
+# https://your-link-3:cic_report

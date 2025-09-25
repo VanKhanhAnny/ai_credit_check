@@ -176,47 +176,80 @@ The system extracts information into a structured `CustomerCheck` model with fou
 
 ## Setup and Installation
 
-### Step 1: Prerequisites
+### Quickstart (copy/paste)
 
-Install the required dependencies:
-
-#### Required Software
-
-- **Go 1.22 or higher**: [Download from golang.org](https://golang.org/dl/)
-- **Poppler tools**: For PDF processing
-  - **Windows (Chocolatey - recommended)**: `choco install poppler -y`
-  - **Windows (Manual ZIP)**: Download from `https://github.com/oschwartz10612/poppler-windows`, extract, and add its `bin` (or `Library\\bin`) folder to PATH
-  - **macOS**: `brew install poppler`
-  - **Linux**: `sudo apt-get install poppler-utils` (Ubuntu/Debian) or `sudo yum install poppler-utils` (CentOS/RHEL)
-
-#### Optional Software
-
-- **Tesseract OCR**: For fallback OCR processing
-  - **Windows**: Download from [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki)
-  - **macOS**: `brew install tesseract`
-  - **Linux**: `sudo apt-get install tesseract-ocr` (Ubuntu/Debian)
-
-#### Windows PATH and verification (important)
-
-If you see `exec: "pdftoppm": executable file not found in %PATH%`, Poppler is not on PATH.
-
-1. Add Poppler to PATH
-
-- Poppler via Chocolatey common path: `C:\\ProgramData\\chocolatey\\lib\\poppler\\tools`
-- Poppler via ZIP: the extracted `bin` (or `Library\\bin`) folder that contains `pdftoppm.exe`
-
-Steps: Start → "Edit the system environment variables" → "Environment Variables…" → select `Path` → "Edit" → "New" → paste the folder path → OK.
-
-2. (Optional) Add Tesseract to PATH: `C:\\Program Files\\Tesseract-OCR`
-
-3. Open a new PowerShell and verify:
+#### Windows (PowerShell)
 
 ```powershell
-pdftoppm -v
-&tesseract --version
+# 0) Open PowerShell as Administrator
+
+# 1) Install Go (winget) – skip if already installed
+winget install -e --id GoLang.Go --silent
+
+# 2) Install Chocolatey (skip if you already have choco)
+# See https://chocolatey.org/install for the official command
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# 3) Install Poppler and Tesseract
+choco install poppler -y
+choco install tesseract -y
+
+# 4) Ensure Poppler and Tesseract are on PATH (no hardcoded paths)
+# Poppler (Chocolatey layout usually puts tools here). Use ChocolateyInstall env var.
+$poppler="${env:ChocolateyInstall}\lib\poppler\tools"
+if (Test-Path $poppler) { setx PATH "$env:PATH;$poppler" | Out-Null }
+
+# Tesseract default path
+$tess="C:\\Program Files\\Tesseract-OCR"
+if (Test-Path $tess) { setx PATH "$env:PATH;$tess" | Out-Null }
+
+# 5) Open a NEW PowerShell and verify
+where pdftoppm | cat
+& pdftoppm -v | cat
+where tesseract | cat
+& tesseract --version | cat
+
+# 6) Build and run
+cd D:\extraction
+go mod download
+go build -o extract.exe ./cmd/extractor
+
+# 7) Test run (replace with your Drive file ID)
+./extract.exe --input "https://drive.google.com/file/d/YOUR_FILE_ID/view" --out test_output.xlsx --skip-analysis --progress
 ```
 
-Both should print versions. If not, re-check the paths.
+If `where pdftoppm` returns nothing, ensure Chocolatey is installed and re-run `choco install poppler -y`, then repeat the PATH step and open a new shell.
+
+#### macOS (Homebrew)
+
+```bash
+# 1) Install prerequisites
+brew install go poppler tesseract
+
+# 2) Build
+cd ~/extraction
+go mod download
+go build -o extract ./cmd/extractor
+
+# 3) Test run (replace with your Drive file ID)
+./extract --input "https://drive.google.com/file/d/YOUR_FILE_ID/view" --out test_output.xlsx --skip-analysis --progress
+```
+
+#### Ubuntu/Debian
+
+```bash
+# 1) Install prerequisites
+sudo apt-get update
+sudo apt-get install -y golang poppler-utils tesseract-ocr
+
+# 2) Build
+cd ~/extraction
+go mod download
+go build -o extract ./cmd/extractor
+
+# 3) Test run (replace with your Drive file ID)
+./extract --input "https://drive.google.com/file/d/YOUR_FILE_ID/view" --out test_output.xlsx --skip-analysis --progress
+```
 
 ### Step 2: Clone and Setup Project
 

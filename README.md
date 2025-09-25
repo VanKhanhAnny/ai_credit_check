@@ -43,10 +43,10 @@ The system follows a layered architecture with clear separation of concerns:
 
 ### Root Directory
 
-- **`go.mod`** - Go module definition and dependencies
-- **`go.sum`** - Go module checksums for dependency verification
-- **`README.md`** - This system documentation
-- **`sample_links.txt`** - Sample input file containing document URLs for testing
+- **`go.mod`**
+- **`go.sum`**
+- **`README.md`**
+- **`sample_links.txt`**
 
 ### Executables
 
@@ -184,7 +184,8 @@ Install the required dependencies:
 
 - **Go 1.22 or higher**: [Download from golang.org](https://golang.org/dl/)
 - **Poppler tools**: For PDF processing
-  - **Windows**: Download from [poppler-windows](https://github.com/oschwartz10612/poppler-windows) or use `choco install poppler`
+  - **Windows (Chocolatey - recommended)**: `choco install poppler -y`
+  - **Windows (Manual ZIP)**: Download from `https://github.com/oschwartz10612/poppler-windows`, extract, and add its `bin` (or `Library\\bin`) folder to PATH
   - **macOS**: `brew install poppler`
   - **Linux**: `sudo apt-get install poppler-utils` (Ubuntu/Debian) or `sudo yum install poppler-utils` (CentOS/RHEL)
 
@@ -194,6 +195,28 @@ Install the required dependencies:
   - **Windows**: Download from [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki)
   - **macOS**: `brew install tesseract`
   - **Linux**: `sudo apt-get install tesseract-ocr` (Ubuntu/Debian)
+
+#### Windows PATH and verification (important)
+
+If you see `exec: "pdftoppm": executable file not found in %PATH%`, Poppler is not on PATH.
+
+1. Add Poppler to PATH
+
+- Poppler via Chocolatey common path: `C:\\ProgramData\\chocolatey\\lib\\poppler\\tools`
+- Poppler via ZIP: the extracted `bin` (or `Library\\bin`) folder that contains `pdftoppm.exe`
+
+Steps: Start → "Edit the system environment variables" → "Environment Variables…" → select `Path` → "Edit" → "New" → paste the folder path → OK.
+
+2. (Optional) Add Tesseract to PATH: `C:\\Program Files\\Tesseract-OCR`
+
+3. Open a new PowerShell and verify:
+
+```powershell
+pdftoppm -v
+&tesseract --version
+```
+
+Both should print versions. If not, re-check the paths.
 
 ### Step 2: Clone and Setup Project
 
@@ -378,48 +401,9 @@ extract --links-file documents.txt --out results.xlsx --skip-analysis
 - [ ] **Infrastructure Setup**
 
   - Deploy backend API to cloud platform (AWS/GCP/Azure)
-  - Set up database for processing history and user management
   - Configure API rate limiting and security
   - Implement logging and monitoring
 
 - [ ] **Frontend Deployment**
   - Deploy frontend to web hosting platform
   - Set up CI/CD pipeline for automatic deployments
-  - Configure domain and SSL certificates
-  - Implement user authentication and access control
-
-### Phase 4: Team Integration
-
-- [ ] **Company Team Onboarding**
-
-  - Create user training materials and documentation
-  - Set up team access and permissions
-  - Implement audit trails for document processing
-  - Create support and troubleshooting guides
-
-- [ ] **Production Optimization**
-  - Performance monitoring and optimization
-  - User feedback collection and feature improvements
-  - Scaling infrastructure based on usage
-  - Regular maintenance and updates
-
-### Technical Implementation Notes
-
-#### Google Sheets Integration
-
-```go
-// Example field mapping structure needed
-type SheetFieldMapping struct {
-    CustomerCheckField string `json:"customer_check_field"`
-    GoogleSheetColumn  string `json:"google_sheet_column"` // e.g., "A1", "B2", "Client Name"
-    FieldType         string `json:"field_type"`          // text, number, date, currency
-    Required          bool   `json:"required"`
-    SheetTemplate     string `json:"sheet_template"`       // Template sheet ID
-}
-
-// Example mapping configuration
-type SheetMappingConfig struct {
-    TemplateSheetID string            `json:"template_sheet_id"`
-    FieldMappings   []SheetFieldMapping `json:"field_mappings"`
-}
-```

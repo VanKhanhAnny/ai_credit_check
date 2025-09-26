@@ -176,8 +176,6 @@ The system extracts information into a structured `CustomerCheck` model with fou
 
 ## Setup and Installation
 
-### Quickstart (copy/paste)
-
 #### Windows (PowerShell)
 
 ```powershell
@@ -186,28 +184,40 @@ The system extracts information into a structured `CustomerCheck` model with fou
 # 1) Install Go (winget) – skip if already installed
 winget install -e --id GoLang.Go --silent
 
-# 2) Install Chocolatey (skip if you already have choco)
-# See https://chocolatey.org/install for the official command
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+# 2) Install Poppler and Tesseract using winget (recommended)
+winget install poppler
+winget install tesseract
 
-# 3) Install Poppler and Tesseract
-choco install poppler -y
-choco install tesseract -y
+# 3) Add Poppler to PATH (winget installs to LOCALAPPDATA)
+$popplerPath = "C:\Users\$env:USERNAME\AppData\Local\Microsoft\WinGet\Packages\oschwartz12.Poppler_Microsoft.Winget.Source_8wekyb3d8bbwe\poppler-25.07.0\Library\bin"
+if (Test-Path $popplerPath) {
+    [Environment]::SetEnvironmentVariable("PATH", "$([Environment]::GetEnvironmentVariable('PATH','User'));$popplerPath", "User")
+    $env:PATH += ";$popplerPath"
+    Write-Host "Added Poppler to PATH: $popplerPath"
+} else {
+    # Find the actual path if the default doesn't exist
+    $popplerDir = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter "*poppler*" -Directory | Select-Object -First 1 -ExpandProperty FullName
+    if ($popplerDir) {
+        $actualPath = Get-ChildItem -Path $popplerDir -Recurse -Filter "pdftoppm.exe" | Select-Object -First 1 -ExpandProperty DirectoryName
+        if ($actualPath) {
+            [Environment]::SetEnvironmentVariable("PATH", "$([Environment]::GetEnvironmentVariable('PATH','User'));$actualPath", "User")
+            $env:PATH += ";$actualPath"
+            Write-Host "Added Poppler to PATH: $actualPath"
+        }
+    }
+}
 
-# 4) Ensure Poppler and Tesseract are on PATH (no hardcoded paths)
-# Poppler (Chocolatey layout usually puts tools here). Use ChocolateyInstall env var.
-$poppler="${env:ChocolateyInstall}\lib\poppler\tools"
-if (Test-Path $poppler) { setx PATH "$env:PATH;$poppler" | Out-Null }
+# 4) Add Tesseract to PATH (winget installs to Program Files)
+if (Test-Path "C:\Program Files\Tesseract-OCR\tesseract.exe") {
+    [Environment]::SetEnvironmentVariable("PATH", "$([Environment]::GetEnvironmentVariable('PATH','User'));C:\Program Files\Tesseract-OCR", "User")
+    $env:PATH += ";C:\Program Files\Tesseract-OCR"
+    Write-Host "Added Tesseract to PATH"
+}
 
-# Tesseract default path
-$tess="C:\\Program Files\\Tesseract-OCR"
-if (Test-Path $tess) { setx PATH "$env:PATH;$tess" | Out-Null }
-
-# 5) Open a NEW PowerShell and verify
-where pdftoppm | cat
-& pdftoppm -v | cat
-where tesseract | cat
-& tesseract --version | cat
+# 5) Verify tools are accessible
+Write-Host "Verifying tools..."
+where pdftoppm
+where tesseract
 
 # 6) Build and run
 cd D:\extraction
@@ -218,69 +228,7 @@ go build -o extract.exe ./cmd/extractor
 ./extract.exe --input "https://drive.google.com/file/d/YOUR_FILE_ID/view" --out test_output.xlsx --skip-analysis --progress
 ```
 
-If `where pdftoppm` returns nothing, ensure Chocolatey is installed and re-run `choco install poppler -y`, then repeat the PATH step and open a new shell.
-
-#### macOS (Homebrew)
-
-```bash
-# 1) Install prerequisites
-brew install go poppler tesseract
-
-# 2) Build
-cd ~/extraction
-go mod download
-go build -o extract ./cmd/extractor
-
-# 3) Test run (replace with your Drive file ID)
-./extract --input "https://drive.google.com/file/d/YOUR_FILE_ID/view" --out test_output.xlsx --skip-analysis --progress
-```
-
-#### Ubuntu/Debian
-
-```bash
-# 1) Install prerequisites
-sudo apt-get update
-sudo apt-get install -y golang poppler-utils tesseract-ocr
-
-# 2) Build
-cd ~/extraction
-go mod download
-go build -o extract ./cmd/extractor
-
-# 3) Test run (replace with your Drive file ID)
-./extract --input "https://drive.google.com/file/d/YOUR_FILE_ID/view" --out test_output.xlsx --skip-analysis --progress
-```
-
-### Step 2: Clone and Setup Project
-
-```bash
-# Clone the repository
-git clone <your-repository-url>
-cd extraction
-
-# Install Go dependencies
-go mod download
-```
-
-### Step 3: API Keys Setup
-
-You need to obtain API keys from Google:
-
-#### Google Cloud Vision API Key
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable the "Vision API" service
-4. Create credentials (API Key)
-5. Copy your API key
-
-#### Google Gemini API Key
-
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Create a new API key
-3. Copy your API key
-
-### Step 4: Environment Configuration
+### Step 2: API Keys Setup
 
 Create a `.env` file in the project root:
 
@@ -289,34 +237,20 @@ GOOGLE_VISION_API_KEY=your_google_cloud_vision_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-**Important**:
+**Get API Keys:**
 
-- Replace the placeholder values with your actual API keys
-- Never commit the `.env` file to version control
-- Add `.env` to your `.gitignore` file
+- **Vision API**: [Google Cloud Console](https://console.cloud.google.com/) → Enable Vision API → Create API Key
+- **Gemini API**: [Google AI Studio](https://makersuite.google.com/app/apikey) → Create API Key
 
-### Step 5: Build the Application
+### Step 3: Build and Test
 
 ```bash
-# Build the main extractor application
+# Build the application
 go build -o extract.exe ./cmd/extractor
+
+# Test with a Google Drive link (replace YOUR_FILE_ID)
+./extract.exe --input "https://drive.google.com/file/d/YOUR_FILE_ID/view" --out test_output.xlsx --skip-analysis --progress
 ```
-
-### Step 6: Test Your Installation
-
-```bash
-# Test with a Google Drive link
-./extract.exe --input "https://drive.google.com/file/d/YOUR_FILE_ID/view" --out test_output.xlsx --source business_license
-
-# Or test in text-only mode (no AI analysis)
-./extract.exe --input "https://drive.google.com/file/d/YOUR_FILE_ID/view" --out test_output.xlsx --skip-analysis
-```
-
-**Note**:
-
-- Replace `YOUR_FILE_ID` with the actual file ID from your Google Drive link
-- Google Drive links should be in format: `https://drive.google.com/file/d/FILE_ID/view`
-- Make sure the Google Drive files are publicly accessible or you have the proper permissions
 
 ## Usage Instructions
 
